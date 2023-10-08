@@ -1,4 +1,7 @@
 ipywidgets
 pandas
-numpy
 plotly
+jupyter
+jupyterhub
+nbconvert
+numpy
