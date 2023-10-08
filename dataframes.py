@@ -56,7 +56,7 @@ def property_tax_amortization(appraisal_val, tax_rate, payments_n, duration, app
     return df.set_index('year')
 
 
-def amortization_summary(ma_df, tax_df):
+def amortization_summary(ma_df, tax_df, monthly_income):
     df = ma_df.copy()
     years = (df.index - 1) / 12 + 1
     df['year'] = years.astype(int)
@@ -71,5 +71,7 @@ def amortization_summary(ma_df, tax_df):
                                        df['mortgage payment']
     df['mortgage payment interest'] = df['interest paid'] / (df['principal paid'] + df['interest paid']) * \
                                       df['mortgage payment']
+    df['monthly income'] = monthly_income
+    df['debt to income ratio'] = df['monthly payment'] / df['monthly income'] * 100
     # df = df.drop(columns=['year'])
     return df
