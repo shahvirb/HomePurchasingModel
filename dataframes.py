@@ -1,6 +1,7 @@
-import pandas as pd
-import numpy as np
 import formulas
+import numpy as np
+import pandas as pd
+import random
 
 
 def mortgage_amortization(loan_value, apr, n, duration, down_pmt, start_month_index=0):
@@ -213,3 +214,49 @@ def amortization_summary(ma_df, tax_df, monthly_income, monthly_additional_costs
     df['debt to income ratio'] = df['monthly payment'] / df['monthly income'] * 100
     # df = df.drop(columns=['year'])
     return df
+
+def randomized_interest(starting_interest_rate, min, max, change_period_years, duration_months):
+    """
+    Generate a randomized series of interest rates and apply them over specified change periods during 
+    a total loan duration.
+
+    Parameters
+    ----------
+    starting_interest_rate : float
+        The initial interest rate applicable at the commencement of the loan.
+    min : float
+        The minimum allowable interest rate during randomization.
+    max : float
+        The maximum allowable interest rate during randomization.
+    change_period_years : int
+        The number of years after which the interest rate is reassessed and potentially changed.
+    duration_months : int
+        The total duration of the interest rate series in months.
+
+    Returns
+    -------
+    df : DataFrame
+        A pandas DataFrame with the generated interest rates, indexed by month.
+    periodic_interest_rates : list of float
+        A list containing the generated interest rates used for each period.
+    """
+    
+    periodic_interest_rates = [starting_interest_rate]
+    change_period_months = 12 * change_period_years
+    t = np.arange(duration_months)
+    interest = np.zeros(t.size)
+    month_slice_start = 0
+    month_slice_end = change_period_months
+    interest[month_slice_start:month_slice_start + change_period_months] = starting_interest_rate
+    for i in range(duration_months // 12 // change_period_years - 1):
+        month_slice_start = (i + 1) * change_period_months
+        new_int = random.uniform(min, max)
+        periodic_interest_rates.append(new_int)
+        interest[month_slice_start:month_slice_start + change_period_months] = new_int
+    df = pd.DataFrame(
+    {
+        'month': t,
+        'interest rate': interest
+    })
+    df = df.set_index('month')
+    return df, periodic_interest_rates
