@@ -69,12 +69,38 @@ def mortgage_amortization(loan_value, apr, n, duration, down_pmt, start_month_in
     return df
 
 
-def refi_mortgage_amortization(loan_amount, n, loan_duration, down_paymt, change_period_years, periodic_interest_rates):
+def refi_mortgage_amortization(house_value, n, loan_duration, down_paymt, change_period_years, periodic_interest_rates):
+    """
+    Compute a mortgage amortization schedule considering periodic refinancing at specified interest rates.
+
+    Parameters
+    ----------
+    house_value : float
+        The total value of the house being mortgaged.
+    n : int
+        The number of payments per year.
+    loan_duration : int
+        The total duration of the loan in years.
+    down_paymt : float
+        The down payment made on the house.
+    change_period_years : int
+        The duration in years after which the loan is refinanced.
+    periodic_interest_rates : list of float
+        A list containing the periodic interest rates applicable after each refinancing period.
+
+    Returns
+    -------
+    DataFrame
+        A concatenated pandas DataFrame containing the amortization schedule across all refinancing periods, 
+        each at their specified interest rate. The DataFrame includes columns such as 'interest rate %', 
+        'mortgage payment', 'payments', 'principal paid', 'interest paid', and is indexed by payment month.
+    """
+    
     ld = loan_duration
     refi_period = change_period_years * n
     first_row = True
     equity = down_paymt
-    loan_value = loan_amount - down_paymt
+    loan_value = house_value - down_paymt
     frames = []
     for apr in periodic_interest_rates:
         print(f'ma_df for apr = {apr}, duration = {ld}')      
@@ -91,6 +117,9 @@ def refi_mortgage_amortization(loan_amount, n, loan_duration, down_paymt, change
         ld -= change_period_years
         equity += ma_df['principal paid'].iat[-1]
         loan_value -= ma_df['principal paid'].iat[-1]
+    
+    # TODO prinicipal paid is incorrectly starting at 0 in each ma_df
+    # TODO interest paid is incorrectly starting at 0 in each ma_df
     
     return pd.concat(frames)
   
