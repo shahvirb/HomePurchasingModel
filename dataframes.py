@@ -39,6 +39,24 @@ def mortgage_amortization(loan_value, apr, n, duration, down_pmt, start_month_in
     
     """
     
+    assert isinstance(loan_value, (np.number, int, float)), "loan_value must be a numeric value"
+    assert loan_value > 0, "loan_value must be positive"
+
+    assert isinstance(apr, (np.number, int, float)), "apr must be a numeric value"
+    assert 0 < apr < 1, "apr must be a decimal between 0 and 1"
+
+    assert isinstance(n, (np.integer, int)), "n must be an integer"
+    assert n > 0, "n must be positive"
+
+    assert isinstance(duration, (np.integer, int)), "duration must be an integer"
+    assert duration > 0, "duration must be positive"
+
+    assert isinstance(down_pmt, (np.number, int, float)), "down_pmt must be a numeric value"
+    assert down_pmt >= 0, "down_pmt must be non-negative"
+
+    assert isinstance(start_month_index, (np.integer, int)), "start_month_index must be an integer type"
+    assert start_month_index >= 0, "start_month_index must be non-negative"
+    
     t = np.arange(duration * n + 1)
     single_payment = formulas.payment(loan_value, apr, n, duration)
     payment = np.full(t.size, single_payment)
@@ -103,6 +121,8 @@ def refi_mortgage_amortization(house_value, n, loan_duration, down_paymt, change
     equity = down_paymt
     loan_value = house_value - down_paymt
     frames = []
+    prev_frame = None
+    
     for apr in periodic_interest_rates:
         print(f'ma_df for apr = {apr}, duration = {ld}')      
         start_index = 0 if not frames else frames[-1].index[-1]
@@ -113,13 +133,25 @@ def refi_mortgage_amortization(house_value, n, loan_duration, down_paymt, change
             first_row = False
         ma_df = ma_df[start_slice:refi_period+1]
         ma_df['interest rate %'] = apr * 100
-        frames.append(ma_df)
         
+        print(f"DEBUG Final value for prinicipal paid this term: {ma_df['principal paid'].iat[-1]}")
+        if prev_frame is not None:
+            ending_principal = prev_frame['principal paid'].iat[-1]
+            print(f"DEBUG previous frame ended at: {ending_principal}")
+            print(f"DEBUG first value of ma_df: {ma_df['principal paid'].iat[0]}")
+            print(f"DEBUG starting new principal at: {ma_df['principal paid'].iat[0] + ending_principal}")
+            ma_df['principal paid'] = ma_df['principal paid'] + ending_principal
+            ma_df['interest paid'] = ma_df['interest paid'] + prev_frame['interest paid'].iat[-1]
+        
+        frames.append(ma_df)
         ld -= change_period_years
-        equity += ma_df['principal paid'].iat[-1]
-        loan_value -= ma_df['principal paid'].iat[-1]
+        equity = ma_df['principal paid'].iat[-1] + down_paymt
+        loan_value = house_value - ma_df['principal paid'].iat[-1] - down_paymt
+        print(f"DEBUG equity = {equity} loan_value = {loan_value}")
+        print()
+        
+        prev_frame = ma_df
     
-    # TODO prinicipal paid is incorrectly starting at 0 in each ma_df
     # TODO interest paid is incorrectly starting at 0 in each ma_df
     
     return pd.concat(frames)
@@ -260,3 +292,6 @@ def randomized_interest(starting_interest_rate, min, max, change_period_years, d
     })
     df = df.set_index('month')
     return df, periodic_interest_rates
+
+if __name__ == "__main__":
+    refi_mortgage_amortization(900000, 12, 30, 200000, 3, [0.077, 0.07309579158741138, 0.046674635865706436, 0.10835080679897587, 0.0968527302624414, 0.08129664568334291, 0.10207750869120687, 0.08102664288489458, 0.08718379322627176, 0.04845177074687092])
