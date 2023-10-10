@@ -134,25 +134,20 @@ def refi_mortgage_amortization(house_value, n, loan_duration, down_paymt, change
         ma_df = ma_df[start_slice:refi_period+1]
         ma_df['interest rate %'] = apr * 100
         
-        print(f"DEBUG Final value for prinicipal paid this term: {ma_df['principal paid'].iat[-1]}")
+        def update_column_values(column):
+            ma_df[column] = ma_df[column] + prev_frame[column].iat[-1]
+            return ma_df
         if prev_frame is not None:
-            ending_principal = prev_frame['principal paid'].iat[-1]
-            print(f"DEBUG previous frame ended at: {ending_principal}")
-            print(f"DEBUG first value of ma_df: {ma_df['principal paid'].iat[0]}")
-            print(f"DEBUG starting new principal at: {ma_df['principal paid'].iat[0] + ending_principal}")
-            ma_df['principal paid'] = ma_df['principal paid'] + ending_principal
-            ma_df['interest paid'] = ma_df['interest paid'] + prev_frame['interest paid'].iat[-1]
-        
+            update_column_values('principal paid')
+            update_column_values('interest paid')
+            update_column_values('payments')
+
         frames.append(ma_df)
         ld -= change_period_years
         equity = ma_df['principal paid'].iat[-1] + down_paymt
         loan_value = house_value - ma_df['principal paid'].iat[-1] - down_paymt
-        print(f"DEBUG equity = {equity} loan_value = {loan_value}")
-        print()
         
         prev_frame = ma_df
-    
-    # TODO interest paid is incorrectly starting at 0 in each ma_df
     
     return pd.concat(frames)
   
